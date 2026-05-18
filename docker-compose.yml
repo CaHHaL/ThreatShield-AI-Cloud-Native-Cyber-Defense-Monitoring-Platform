@@ -1,0 +1,164 @@
+
+
+networks:
+  threatshield-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  cowrie-logs:
+  geoip-data:
+  grafana-data:
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PostgreSQL — Primary data store
+  # ─────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: threatshield-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - threatshield-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Cowrie — SSH (2222) + Telnet (2323) Honeypot
+  # ─────────────────────────────────────────────────────────────────────────
+  cowrie:
+    build:
+      context: ./honeypot/cowrie
+      dockerfile: Dockerfile
+    container_name: threatshield-cowrie
+    restart: unless-stopped
+    ports:
+      - "2222:2222"   # Fake SSH
+      - "2323:2323"   # Fake Telnet
+    volumes:
+      - cowrie-logs:/cowrie/cowrie-git/var/log/cowrie
+      - ./honeypot/cowrie/userdb.txt:/cowrie/etc/userdb.txt:ro
+    networks:
+      - threatshield-net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Web-Login Honeypot — Fake corporate portal (8080)
+  # ─────────────────────────────────────────────────────────────────────────
+  web-login-honeypot:
+    build:
+      context: ./honeypot/web-login
+      dockerfile: Dockerfile
+    container_name: threatshield-web-login
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      WEB_LOGIN_LOG_PATH: /shared-logs/web-login.json
+    volumes:
+      - cowrie-logs:/shared-logs
+    networks:
+      - threatshield-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # FastAPI Backend — REST API + WebSocket + Log Ingestion
+  # ─────────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: threatshield-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - cowrie-logs:/cowrie-logs
+      - geoip-data:/app/geoip
+    networks:
+      - threatshield-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend — React + Vite served via Nginx
+  # ─────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000}
+    container_name: threatshield-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - threatshield-net
+    depends_on:
+      - backend
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Prometheus — Metrics scraping
+  # ─────────────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: threatshield-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - threatshield-net
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Grafana — Auto-provisioned SOC dashboard
+  # ─────────────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: threatshield-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ThreatShield2024!
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/threatshield.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - threatshield-net
+    depends_on:
+      - prometheus

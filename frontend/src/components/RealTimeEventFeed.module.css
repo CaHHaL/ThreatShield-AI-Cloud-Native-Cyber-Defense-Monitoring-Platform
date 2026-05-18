@@ -1,0 +1,123 @@
+.wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.wrapper:hover { border-color: var(--border-hover); }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+.live    { color: var(--green); background: var(--green-dim); }
+.offline { color: var(--danger); background: var(--danger-dim); }
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 300px;
+  max-height: 400px;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  height: 200px;
+}
+
+.event {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+.event:hover { background: rgba(255,255,255,0.02); }
+.event:last-child { border-bottom: none; }
+
+.evtIcon {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.evtBody {
+  flex: 1;
+  font-size: 0.77rem;
+  line-height: 1.5;
+  word-break: break-word;
+  color: var(--text-secondary);
+}
+
+.evtSev {
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+}
+
+.evtMsg  { color: var(--text-primary); }
+
+.evtCountry {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.evtIp {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+.evtTime {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.footer {
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}

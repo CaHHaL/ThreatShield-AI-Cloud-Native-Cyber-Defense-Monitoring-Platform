@@ -1,0 +1,108 @@
+.wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s;
+}
+.wrapper:hover { border-color: var(--border-hover); }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.list {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.empty {
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: background 0.12s;
+  font-size: 0.78rem;
+}
+.item:hover { background: rgba(0,212,255,0.04); }
+.item:last-child { border-bottom: none; }
+
+.typeIcon { font-size: 0.95rem; flex-shrink: 0; }
+
+.ip {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 500;
+  min-width: 110px;
+}
+
+.country {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  min-width: 28px;
+  font-family: var(--font-mono);
+}
+
+.type {
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  min-width: 24px;
+  text-align: right;
+}
+
+.source {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.arrow {
+  color: var(--text-muted);
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.item:hover .arrow { color: var(--accent); }
