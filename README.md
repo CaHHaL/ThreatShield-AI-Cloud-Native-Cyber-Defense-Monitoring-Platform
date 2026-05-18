@@ -1,282 +1,87 @@
-# 🛡️ ThreatShield AI
+# 🛡️ ThreatShield AI — Cloud-Native Cyber Defense Platform
 
-**Cloud-native cybersecurity monitoring & threat intelligence platform**
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.11-blue.svg)
+![React](https://img.shields.io/badge/React-18-blue.svg)
+![AWS](https://img.shields.io/badge/AWS-EC2-orange.svg)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-purple.svg)
 
-Real-time SOC dashboard powered by Cowrie SSH/Telnet honeypots, a fake corporate web-login honeypot, FastAPI backend, React frontend, and Prometheus/Grafana monitoring — all containerized with Docker Compose.
+ThreatShield AI is a comprehensive, cloud-native cybersecurity monitoring and threat intelligence platform. It utilizes a network of honeypots to capture real-world attack telemetry, processes the data through a high-performance asynchronous backend, and visualizes live threats on a React-based SOC dashboard via WebSockets.
+
+---
+
+## ✨ Key Features
+- **Active Defense Honeypots:** Deploys Cowrie (SSH/Telnet) and a custom Flask-based fake corporate web-login portal to trap attackers and capture telemetry.
+- **Real-Time Data Pipeline:** An asynchronous FastAPI backend ingests honeypot logs instantly, utilizing WebSockets to stream live attacks to the frontend.
+- **Threat Classification:** Automatically calculates threat severity scores, parses attacker commands, and maps IP addresses to geolocations using MaxMind GeoIP.
+- **Modern SOC Dashboard:** A responsive, dark-themed React frontend featuring interactive Leaflet maps, Recharts timeline graphs, and live event feeds.
+- **Infrastructure as Code (IaC):** 100% automated AWS EC2 provisioning using Terraform.
+- **DevSecOps CI/CD:** Automated GitHub Actions pipeline featuring code linting, automated testing, and Aqua Security Trivy vulnerability scanning.
+- **Observability Stack:** Fully integrated Prometheus and Grafana auto-provisioned dashboards for backend health and HTTP request monitoring.
 
 ---
 
 ## 🏗️ Architecture
 
+1. **Frontend:** React, Vite, TailwindCSS (Hosted on Vercel Edge Network).
+2. **Backend:** FastAPI, Python, SQLAlchemy AsyncIO, WebSockets.
+3. **Database:** PostgreSQL.
+4. **Honeypots:** Cowrie (SSH/Telnet), Flask (Web).
+5. **Monitoring:** Prometheus, Grafana.
+6. **Deployment:** Docker Compose, AWS EC2, Terraform.
+
+---
+
+## 🚀 Deployment Guide
+
+This project is optimized for automated cloud deployment via Terraform on AWS.
+
+### 1. Provision Infrastructure
+Ensure you have the AWS CLI and Terraform installed and configured.
+```bash
+cd terraform
+terraform init
+terraform apply -var="key_name=your-aws-ssh-key" -var="aws_region=ap-south-1"
 ```
-Browser → Frontend (Nginx:3000)
-              ↕ HTTP/WS
-         Backend (FastAPI:8000)
-              ↕
-         PostgreSQL:5432
-              ↑
-         Log Files (shared volume)
-              ↑
-    Cowrie:2222/2323 + Web-Login:8080
+*Note: The EC2 instance utilizes a `userdata.sh` script to automatically install Docker, clone this repository, and spin up the entire backend container stack.*
 
-Prometheus:9090 → scrapes → Backend
-Grafana:3001    → queries → Prometheus
-```
+### 2. Frontend Configuration
+The frontend is designed to be deployed on Vercel. Because the AWS instance receives a dynamic IP, Vercel acts as a secure reverse proxy to the backend.
 
-## 🚀 Quick Start (Local Docker)
+1. Deploy the `frontend/` directory to Vercel.
+2. Update the `frontend/vercel.json` file with your new EC2 Public IP address.
+3. Vercel will automatically route `/api/` and `/ws/` requests to your AWS instance, bypassing browser Mixed-Content restrictions.
 
-### Prerequisites
-- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
-- Git
+---
 
-### 1. Clone & Configure
+## 🛡️ DevSecOps Pipeline
+Every push to the `main` branch triggers the GitHub Actions pipeline (`.github/workflows/ci.yml`), which performs:
+1. **Code Quality:** Python Ruff linting and React build checks.
+2. **Integration Testing:** PyTest suite against an ephemeral PostgreSQL Docker container.
+3. **Security Scanning:** Trivy filesystem scan looking for CRITICAL and HIGH vulnerabilities.
+4. **Dry-Run Builds:** Validates all Dockerfiles prior to deployment.
+
+---
+
+## 💻 Local Development
+
+To run the platform locally without AWS:
 
 ```bash
-git clone <your-repo-url> ThreatShield-AI
+# 1. Clone the repository
+git clone https://github.com/YourUsername/ThreatShield-AI.git
 cd ThreatShield-AI
+
+# 2. Setup environment variables
 cp .env.example .env
-```
 
-Edit `.env` — the defaults work for local development.
-
-### 2. Start All Services
-
-```bash
+# 3. Start backend services
 docker compose up -d
-```
 
-This starts 7 services:
-| Service | URL | Description |
-|---|---|---|
-| Frontend | http://localhost:3000 | SOC Dashboard |
-| Backend API | http://localhost:8000 | FastAPI + Swagger |
-| API Docs | http://localhost:8000/docs | OpenAPI docs |
-| Prometheus | http://localhost:9090 | Metrics |
-| Grafana | http://localhost:3001 | Dashboards (admin/ThreatShield2024!) |
-| Web Login HP | http://localhost:8080 | Fake corporate portal |
-| SSH Honeypot | localhost:2222 | Fake SSH server |
-| Telnet HP | localhost:2323 | Fake Telnet server |
-
-### 3. Seed Test Data (first run)
-
-```bash
-docker exec -it threatshield-backend python seed_data.py
-```
-
-This creates 60 synthetic attack sessions across 20 countries with realistic severity distribution.
-
-### 4. Open Dashboard
-
-Navigate to **http://localhost:3000** — you should see the full SOC dashboard.
-
----
-
-## 🧪 Testing the Honeypots
-
-### SSH Honeypot (Cowrie)
-```bash
-ssh -p 2222 root@localhost          # Try to connect (will be captured)
-ssh -p 2222 admin@localhost         # Try another username
-```
-
-### Telnet Honeypot
-```bash
-telnet localhost 2323               # Fake Telnet (Linux/Mac/WSL)
-```
-
-### Web Login Honeypot
-```bash
-# Manual test
-curl -X POST http://localhost:8080/login \
-  -d "username=admin&password=password123"
-
-# Automated scanner simulation
-for i in {1..10}; do
-  curl -s -X POST http://localhost:8080/login \
-    -d "username=admin&password=pass$i" > /dev/null
-  echo "Attempt $i sent"
-  sleep 0.5
-done
-```
-
-### Watch Real-Time Ingestion
-```bash
-docker logs -f threatshield-backend  # See log parsing in action
-```
-
----
-
-## 📁 Project Structure
-
-```
-DevSecOps_2/
-├── .env.example          # Environment template
-├── .env                  # Local config (gitignored)
-├── docker-compose.yml    # Full orchestration
-├── .github/workflows/    # CI/CD pipeline
-├── backend/
-│   ├── app/
-│   │   ├── main.py       # FastAPI entry
-│   │   ├── models.py     # SQLAlchemy ORM
-│   │   ├── config.py     # Pydantic settings
-│   │   ├── database.py   # Async engine
-│   │   ├── routers/      # API endpoints
-│   │   ├── services/     # GeoIP + threat classifier
-│   │   ├── parsers/      # Log parsers
-│   │   ├── ingestion/    # File watcher
-│   │   └── websocket/    # WS manager
-│   └── seed_data.py      # Synthetic data generator
-├── frontend/
-│   └── src/
-│       ├── components/   # All UI components
-│       ├── charts/       # Recharts visualizations
-│       ├── pages/        # Dashboard layout
-│       └── services/     # API + hooks
-├── honeypot/
-│   ├── cowrie/           # SSH/Telnet honeypot
-│   └── web-login/        # Flask fake portal
-├── monitoring/
-│   ├── prometheus/       # Scrape config
-│   └── grafana/          # Auto-provisioned dashboard
-└── docker/
-    └── 01-init.sql       # DB initialization
-```
-
----
-
-## 🔧 Development (without Docker)
-
-### Backend
-```bash
-cd backend
-pip install -r requirements.txt
-# Set up a local PostgreSQL instance, then:
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/threatshield_db uvicorn app.main:app --reload
-```
-
-### Frontend
-```bash
+# 4. Start the frontend
 cd frontend
 npm install
-npm run dev    # Starts on http://localhost:5173
+npm run dev
 ```
 
----
-
-## 🌍 GeoIP Setup (Real IP Geolocation)
-
-The platform works without GeoIP using an intelligent fallback, but for real geolocation:
-
-1. Create a free account at https://www.maxmind.com/en/geolite2/signup
-2. Download **GeoLite2-City.mmdb**
-3. Copy to `backend/geoip/GeoLite2-City.mmdb`
-4. Mount with: `docker compose up -d --build backend`
-
-Or use the Docker volume:
-```bash
-docker cp GeoLite2-City.mmdb threatshield-backend:/app/geoip/
-docker restart threatshield-backend
-```
-
----
-
-## 🌐 AWS EC2 Migration Guide
-
-### 1. Launch EC2 Instance
-- AMI: Ubuntu 22.04 LTS
-- Instance: t3.small (2 vCPU, 2GB RAM) minimum
-- Storage: 20GB gp3
-
-### 2. Security Group Rules
-| Port | Protocol | Source | Purpose |
-|---|---|---|---|
-| 22  | TCP | Your IP | SSH admin |
-| 80  | TCP | 0.0.0.0/0 | Frontend |
-| 8000| TCP | 0.0.0.0/0 | Backend API |
-| 2222| TCP | 0.0.0.0/0 | SSH Honeypot |
-| 2323| TCP | 0.0.0.0/0 | Telnet Honeypot |
-| 8080| TCP | 0.0.0.0/0 | Web Login Honeypot |
-| 9090| TCP | Your IP | Prometheus |
-| 3001| TCP | Your IP | Grafana |
-| 3000| TCP | 0.0.0.0/0 | Dashboard |
-
-### 3. Server Setup
-```bash
-# SSH into EC2
-ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
-
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker ubuntu
-newgrp docker
-
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Clone project
-git clone <your-repo-url> /opt/threatshield
-cd /opt/threatshield
-```
-
-### 4. Configure for EC2
-```bash
-cp .env.example .env
-# Edit .env:
-nano .env
-# Change:
-# VITE_API_URL=http://<EC2_PUBLIC_IP>:8000
-# VITE_WS_URL=ws://<EC2_PUBLIC_IP>:8000
-# BACKEND_CORS_ORIGINS=http://<EC2_PUBLIC_IP>:3000
-```
-
-### 5. Deploy
-```bash
-docker compose up -d
-docker exec -it threatshield-backend python seed_data.py
-```
-
-### 6. Access
-- Dashboard:  `http://<EC2_PUBLIC_IP>:3000`
-- Backend API: `http://<EC2_PUBLIC_IP>:8000/docs`
-- Grafana:    `http://<EC2_PUBLIC_IP>:3001`
-
----
-
-## 📊 API Reference
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/stats` | GET | Platform-wide KPI metrics |
-| `/api/attacks` | GET | Attack sessions (paginated) |
-| `/api/attacks/{id}` | GET | Full session detail |
-| `/api/top-ips` | GET | Top 20 attacker IPs |
-| `/api/countries` | GET | Attacks by country |
-| `/api/timeline` | GET | Hourly attack timeline |
-| `/api/categories` | GET | Attack type distribution |
-| `/ws/feed` | WS | Real-time event stream |
-| `/metrics` | GET | Prometheus metrics |
-| `/docs` | GET | Swagger UI |
-
----
-
-## 🔒 Security Notes
-
-- All honeypot credentials are FAKE — never real credentials
-- The web-login portal always rejects logins (honeypot behavior)
-- Never expose PostgreSQL port publicly
-- Change `GF_SECURITY_ADMIN_PASSWORD` before production
-- `SECRET_KEY` must be changed before any real deployment
-- This platform is for **educational/defensive research** only
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feat/amazing-feature`)
-3. Commit (`git commit -m 'feat: add amazing feature'`)
-4. Push (`git push origin feat/amazing-feature`)
-5. Open a Pull Request
-
-CI/CD will automatically lint, test, scan, and build your changes.
+*The SOC Dashboard will be available at `http://localhost:5173`.*
