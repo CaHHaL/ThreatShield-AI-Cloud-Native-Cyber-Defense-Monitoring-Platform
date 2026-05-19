@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://35.154.95.167:8000/api/:path*"
+      "destination": "http://13.203.221.129:8000/api/:path*"
     },
     {
       "source": "/ws/:path*",
-      "destination": "http://35.154.95.167:8000/ws/:path*"
+      "destination": "http://13.203.221.129:8000/ws/:path*"
     }
   ]
 }
