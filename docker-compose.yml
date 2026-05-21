@@ -10,8 +10,6 @@ volumes:
 
 services:
 
-  # PostgreSQL — Primary data store
-  # ─────────────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
     container_name: threatshield-postgres

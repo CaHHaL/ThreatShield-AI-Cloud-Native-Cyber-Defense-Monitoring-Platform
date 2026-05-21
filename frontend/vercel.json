@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://3.7.69.48:8000/api/:path*"
+      "destination": "http://15.206.89.122:8000/api/:path*"
     },
     {
       "source": "/ws/:path*",
-      "destination": "http://3.7.69.48:8000/ws/:path*"
+      "destination": "http://15.206.89.122:8000/ws/:path*"
     }
   ]
 }
