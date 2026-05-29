@@ -1,4 +1,4 @@
-# 🛡️ ThreatShield AI — Cloud-Native Cyber Defense Platform
+# 🛡️ ThreatShield — Cloud-Native Cyber Defense Platform
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.11-blue.svg)
@@ -6,7 +6,7 @@
 ![AWS](https://img.shields.io/badge/AWS-EC2-orange.svg)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-purple.svg)
 
-ThreatShield AI is a comprehensive, cloud-native cybersecurity monitoring and threat intelligence platform. It utilizes a network of honeypots to capture real-world attack telemetry, processes the data through a high-performance asynchronous backend, and visualizes live threats on a React-based SOC dashboard via WebSockets.
+ThreatShield is a comprehensive, cloud-native cybersecurity monitoring and threat intelligence platform. It utilizes a network of honeypots to capture real-world attack telemetry, processes the data through a high-performance asynchronous backend, and visualizes live threats on a React-based SOC dashboard via WebSockets.
 
 ---
 
